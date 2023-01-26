@@ -1,0 +1,44 @@
+---
+- hosts: vms
+  become: true
+  become_user: root
+  become_method: sudo
+  gather_facts: yes
+
+  tasks:
+    - name: Check that the sentinelctl exists
+      ansible.builtin.stat:
+        path: /opt/sentinelone/bin/sentinelctl
+      become: true
+      register: sentinelctl_exists
+    
+    - name: SentinelOne Ubuntu - Copy
+      copy:
+        src: ../arquivos/SentinelAgent_linux_v21_10_4_9.deb
+        dest: /tmp/
+        mode: '0777'
+      when: sentinelctl_exists.stat.exists == False and (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == "Debian")
+    
+    - name: SentinelOne Centos - Copy
+      copy:
+        src: ../arquivos/SentinelAgent_linux_v21_10_4_9.rpm
+        dest: /tmp/
+        mode: '0777'
+      when: sentinelctl_exists.stat.exists == False and (ansible_facts['os_family'] == "RedHat" or ansible_facts['os_family'] == "Debian")
+    
+
+    - name: SentinelOne Ubuntu - Comandos
+      command: sudo dpkg -i /tmp/SentinelAgent_linux_v21_10_4_9.deb
+      when: sentinelctl_exists.stat.exists == False and (ansible_facts['os_family'] == "Debian")
+
+    - name: SentinelOne Centos - Comandos
+      command: sudo rpm -ivh --nodigest --nofiledigest /tmp/SentinelAgent_linux_v21_10_4_9.rpm
+      when: sentinelctl_exists.stat.exists == False and (ansible_facts['os_family'] == "RedHat")
+
+    - name: SentinelOne - Token
+      command: sudo /opt/sentinelone/bin/sentinelctl management token set eyJ1cmwiOiAiaHR0cHM6Ly91c2VhMS1pc2guc2VudGluZWxvbmUubmV0IiwgInNpdGVfa2V5IjogImdfMmE5MmQ4M2NmMDg5NDYzZCJ9
+      when: sentinelctl_exists.stat.exists == False
+
+    - name: SentinelOne - Enable
+      command: sudo systemctl enable --now sentinelone
+      when: sentinelctl_exists.stat.exists == False

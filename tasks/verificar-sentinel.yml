@@ -1,0 +1,10 @@
+- hosts: vms
+  become: true
+  become_user: root
+  become_method: sudo
+  gather_facts: yes
+
+  tasks:
+  - name: Inserir PubKey
+    shell: sudo /opt/sentinelone/bin/sentinelctl management status 
+
